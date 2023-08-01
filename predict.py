@@ -17,7 +17,7 @@ from cog import BasePredictor, Input, Path
 
 MODEL_ID = "stabilityai/stable-diffusion-2-1"
 MODEL_CACHE = "diffusers-cache"
-
+DEVICE = None
 
 def make_scheduler(name, config):
     return {
@@ -37,7 +37,7 @@ class Predictor(BasePredictor):
             MODEL_ID,
             cache_dir=MODEL_CACHE,
             local_files_only=True,
-        ).to("cuda")
+        ).to(DEVICE)
         self.img2img_pipe = StableDiffusionImg2ImgPipeline(
             vae=self.txt2img_pipe.vae,
             text_encoder=self.txt2img_pipe.text_encoder,
@@ -46,7 +46,7 @@ class Predictor(BasePredictor):
             scheduler=self.txt2img_pipe.scheduler,
             safety_checker=self.txt2img_pipe.safety_checker,
             feature_extractor=self.txt2img_pipe.feature_extractor,
-        ).to("cuda")
+        ).to(DEVICE)
 
     @torch.inference_mode()
     def predict(
@@ -109,7 +109,7 @@ class Predictor(BasePredictor):
         }
         pipe.scheduler = make_scheduler(scheduler, pipe.scheduler.config)
 
-        generator = torch.Generator("cuda").manual_seed(seed)
+        generator = torch.Generator(DEVICE).manual_seed(seed)
         output = pipe(
             prompt=[prompt] * num_outputs if prompt is not None else None,
             guidance_scale=guidance_scale,
